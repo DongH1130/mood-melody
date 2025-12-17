@@ -2,41 +2,56 @@ plugins {
     id 'java'
     id 'org.jetbrains.kotlin.jvm' version '1.9.20'
     id 'org.jetbrains.kotlin.plugin.spring' version '1.9.20'
-    id 'org.springframework.boot' version '3.2.0'  // 안정적인 버전으로 업데이트
+    id 'org.springframework.boot' version '3.2.0'
     id 'io.spring.dependency-management' version '1.1.4'
 }
 
-group = 'com.example'
+group = 'com.moodmelody'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '17'  // Java 17로 업데이트
+sourceCompatibility = '17'
 
 repositories {
     mavenCentral()
+    maven { url 'https://jitpack.io' }  // Spotify Web API를 위해 추가
 }
 
 dependencies {
+    // Spring Boot Starters
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
-    implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
+    
+    // Kotlin
     implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
     implementation 'org.jetbrains.kotlin:kotlin-reflect'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3'
     
     // Spotify Web API
-    implementation 'se.michaelthelin.spotify:spotify-web-api-java:8.2.0'
+    implementation 'com.github.thelinmichael:spotify-web-api-java:8.2.0'
     
-    // OpenAI API
+    // OpenAI
     implementation 'com.theokanning.openai-gpt3-java:service:0.18.2'
+    implementation 'com.theokanning.openai-gpt3-java:client:0.18.2'
+    
+    // Database
+    runtimeOnly 'com.mysql:mysql-connector-j'
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-mysql'
     
     // HTTP Client
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
     
-    runtimeOnly 'mysql:mysql-connector-java:8.0.33'
+    // JWT
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+    
+    // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-}
-
-bootRun {
-    mainClass = 'com.moodmelody.MoodMelodyApplicationKt'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'io.mockk:mockk:1.13.7'
 }
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
@@ -48,4 +63,13 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+bootRun {
+    mainClass = 'com.moodmelody.MoodMelodyApplicationKt'
+}
+
+// For Railway deployment
+tasks.register('stage') {
+    dependsOn 'build'
 }

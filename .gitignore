@@ -1,40 +1,38 @@
-HELP.md
-.gradle
-build/
-!gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
 
-### STS ###
+!**/src/main/**/bin/
+!**/src/main/**/build/
+!**/src/main/**/out/
+!**/src/test/**/bin/
+!**/src/test/**/build/
+!**/src/test/**/out/
+!gradle/wrapper/gradle-wrapper.jar
 .apt_generated
 .classpath
 .factorypath
+.gradle
+.idea
+.kotlin
 .project
 .settings
 .springBeans
 .sts4-cache
-bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
-
-### IntelliJ IDEA ###
-.idea
-*.iws
+.vscode/
 *.iml
 *.ipr
-out/
-!**/src/main/**/out/
-!**/src/test/**/out/
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
+*.iws
 /.nb-gradle/
-
-### VS Code ###
-.vscode/
-
+/dist/
+/nbbuild/
+/nbdist/
+/nbproject/private/
+# 로컬 설정 파일
+### IntelliJ IDEA ###
 ### Kotlin ###
-.kotlin
+### NetBeans ###
+### STS ###
+### VS Code ###
+bin/
+build/
+HELP.md
+out/
+src/main/resources/application-local.yml

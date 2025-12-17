@@ -12,7 +12,7 @@ sourceCompatibility = '17'
 
 repositories {
     mavenCentral()
-    maven { url 'https://jitpack.io' }  // Spotify Web API를 위해 추가
+    maven { url 'https://jitpack.io' }  // JitPack 저장소 추가
 }
 
 dependencies {
@@ -28,8 +28,8 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-reflect'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3'
     
-    // Spotify Web API
-    implementation 'com.github.thelinmichael:spotify-web-api-java:8.2.0'
+    // Spotify Web API (안정적인 버전으로 변경)
+    implementation 'com.github.thelinmichael:spotify-web-api-java:7.2.3'
     
     // OpenAI
     implementation 'com.theokanning.openai-gpt3-java:service:0.18.2'

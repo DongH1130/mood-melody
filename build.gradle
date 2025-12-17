@@ -30,9 +30,8 @@ dependencies {
     // Spotify Web API (공식 Maven 저장소 버전)
     implementation 'se.michaelthelin.spotify:spotify-web-api-java:7.3.0'
     
-    // OpenAI
-    implementation 'com.theokanning.openai-gpt3-java:service:0.18.2'
-    implementation 'com.theokanning.openai-gpt3-java:client:0.18.2'
+    // Gemini (Google Generative Language API via HTTP)
+    // OpenAI 의존성 제거됨
     
     // Database
     runtimeOnly 'com.mysql:mysql-connector-j'

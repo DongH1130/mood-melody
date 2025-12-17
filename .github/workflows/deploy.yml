@@ -1,4 +1,4 @@
-name: Build and Deploy to Cloudflare Pages
+name: Deploy static site to Cloudflare Pages
 
 on:
   push:
@@ -9,44 +9,41 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up JDK 17
-      uses: actions/setup-java@v3
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
-      
-    - name: Build with Gradle
-      run: ./gradlew clean build
-      
-    - name: Upload build
-      uses: actions/upload-artifact@v3
-      with:
-        name: build
-        path: build/libs/*.jar
-        retention-days: 1
-        
+      - uses: actions/checkout@v3
+
+      - name: Prepare static site
+        run: |
+          mkdir -p pages
+          cp -v src/main/resources/templates/index.html pages/index.html
+          if [ -d src/main/resources/static ] && [ "$(ls -A src/main/resources/static)" ]; then
+            cp -rv src/main/resources/static pages/
+          fi
+          if [ -f cloudflare/_worker.js ]; then
+            cp -v cloudflare/_worker.js pages/_worker.js
+          fi
+
+      - name: Upload site artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: site
+          path: pages
+          retention-days: 1
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Download build
-      uses: actions/download-artifact@v3
-      with:
-        name: build
-        
-    - name: Publish to Cloudflare Pages
-      uses: cloudflare/pages-action@1
-      with:
-        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        projectName: mood-melody
-        directory: build/libs
-        gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+      - name: Download site artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: site
+
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: mood-melody
+          directory: site
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}

@@ -1,6 +1,6 @@
 package com.moodmelody.controller
 
-import com.moodmelody.service.OpenAIService
+import com.moodmelody.service.GeminiService
 import com.moodmelody.service.SpotifyService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api")
 class ApiController(
     private val spotifyService: SpotifyService,
-    private val openAIService: OpenAIService
+    private val geminiService: GeminiService
 ) {
     
     @GetMapping("/search")
@@ -21,7 +21,7 @@ class ApiController(
     @PostMapping("/analyze-mood")
     fun analyzeMood(@RequestBody request: Map<String, String>): ResponseEntity<Map<String, String>> {
         val text = request["text"] ?: throw IllegalArgumentException("Text is required")
-        val moodAnalysis = openAIService.analyzeMood(text)
+        val moodAnalysis = geminiService.analyzeMood(text)
         return ResponseEntity.ok(mapOf("mood" to moodAnalysis))
     }
     
@@ -31,7 +31,7 @@ class ApiController(
         val mood = request["mood"] as? String ?: ""
         
         val recommendedTracks = spotifyService.getRecommendations(seedTracks, mood)
-        val playlistDescription = openAIService.generatePlaylistDescription(mood, recommendedTracks)
+        val playlistDescription = geminiService.generatePlaylistDescription(mood, recommendedTracks)
         
         return ResponseEntity.ok(mapOf(
             "tracks" to recommendedTracks,

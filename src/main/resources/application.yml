@@ -1,0 +1,41 @@
+spring:
+  datasource:
+    url: \${DATABASE_URL:jdbc:mysql://localhost:3306/mood_melody?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true}
+    username: \${DB_USERNAME:root}
+    password: \${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: \${GOOGLE_CLIENT_ID}
+            client-secret: \${GOOGLE_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
+
+# Spotify 설정
+spotify:
+  client:
+    id: \${SPOTIFY_CLIENT_ID}
+    secret: \${SPOTIFY_CLIENT_SECRET}
+    redirect-uri: \${SPOTIFY_REDIRECT_URI:http://localhost:8085/login/oauth2/code/spotify}
+
+# OpenAI 설정
+openai:
+  api:
+    key: \${OPENAI_API_KEY}
+
+server:
+  port: 8085
+  servlet:
+    context-path: /

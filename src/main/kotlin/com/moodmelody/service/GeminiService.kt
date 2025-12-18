@@ -26,6 +26,33 @@ class GeminiService(
         return responseText ?: "분석 결과를 생성하지 못했습니다."
     }
 
+    data class MoodParams(
+        val seed_genres: List<String> = emptyList(),
+        val target_valence: Float? = null,
+        val target_energy: Float? = null,
+        val target_danceability: Float? = null
+    )
+
+    fun analyzeMoodParams(text: String): MoodParams? {
+        val prompt = """
+            너는 음악 추천용 파라미터만 JSON으로 반환하는 엔진이다.
+            아래 규칙을 반드시 지켜라:
+            - 출력은 오직 JSON 한 덩어리만, 설명/코드블록 금지.
+            - 키 이름은 seed_genres, target_valence, target_energy, target_danceability.
+            - seed_genres는 Spotify 장르 슬러그 배열(pop, rock, edm, ambient 등).
+            - 각 target_* 값은 0.0~1.0 사이의 숫자 또는 null.
+
+            사용자 기분 텍스트: "$text"
+            JSON만 출력해.
+        """.trimIndent()
+        val response = generateContent(prompt) ?: return null
+        return try {
+            mapper.readValue<MoodParams>(response)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     fun generatePlaylistDescription(mood: String, tracks: List<String>): String {
         val prompt = """
             너는 플레이리스트 설명을 생성하는 AI야.

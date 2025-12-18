@@ -37,9 +37,43 @@
 - Cloudflare Pages 프로젝트 `mood-melody`의 Deployments에서 배포 성공 여부를 확인합니다.
 - 배포된 도메인에서 `index.html` 랜딩 페이지 로드 확인 후, 백엔드 링크 동작은 별도 서버/프록시 구성에 따라 확인합니다.
 
-## 8) 백엔드 환경 변수 설정
+## 8) 백엔드 환경 변수 설정 (MySQL 사용)
 - 백엔드 호스팅(Render/Railway 등)에 다음 변수를 추가하세요:
   - `GEMINI_API_KEY` : 제공된 키 값
   - `GEMINI_MODEL` : 기본 `gemini-1.5-flash`(선택)
-- 로컬 개발에서는 `src/main/resources/application-local.yml`에 키가 설정되어 있으므로 다음으로 실행하세요:
+  - `DATABASE_URL` : `jdbc:mysql://<HOST>:<PORT>/<DB>?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true`
+  - `DB_USERNAME` : MySQL 사용자명
+  - `DB_PASSWORD` : MySQL 비밀번호
+  - `PORT` : 플랫폼이 제공하는 포트(자동 주입되면 생략 가능). 앱은 `${PORT:8085}`를 사용합니다.
+
+### Render 예시
+- Render에서 MySQL(DB) 생성 후 `HOST`, `PORT`, `DB`, `USERNAME`, `PASSWORD`를 확인합니다.
+- Web Service 생성:
+  - Build Command: `./gradlew clean build`
+  - Start Command: `java -jar build/libs/mood-melody-0.0.1-SNAPSHOT.jar`
+  - Environment: 위 변수들 설정
+- 완료 후 공개 URL(예: `https://your-app.onrender.com`)을 Cloudflare Pages 변수 `BACKEND_URL`로 설정합니다.
+
+### Railway 예시
+- Railway에서 MySQL 플러그인 추가 → 접속 정보에서 `HOST`, `PORT`, `DB`, `USER`, `PASSWORD` 확인
+- Service의 Variables에 위 값들을 설정합니다.
+- Service URL(예: `https://your-service.up.railway.app`)을 Cloudflare Pages 변수 `BACKEND_URL`로 설정합니다.
+
+### 로컬 개발 (MySQL)
+- 로컬 MySQL에 데이터베이스 `mood_melody` 생성 후:
+  - `export DATABASE_URL="jdbc:mysql://localhost:3306/mood_melody?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true"`
+  - `export DB_USERNAME="root"` (또는 사용자명)
+  - `export DB_PASSWORD="<비밀번호>"`
   - `SPRING_PROFILES_ACTIVE=local ./gradlew bootRun`
+
+> 주의: Flyway 의존성이 포함되어 있으나 기본 경로(`db/migration`)에 마이그레이션 파일이 없다면 JPA `ddl-auto=update`가 스키마를 생성/갱신합니다. 운영에서는 Flyway 마이그레이션 추가를 권장합니다.
+
+## 9) Cloudflare Pages 환경 변수
+- Pages 프로젝트 `mood-melody` → Settings → Variables and Secrets에서:
+  - `BACKEND_URL` = 백엔드 공개 URL (예: `https://your-app.onrender.com`)
+  - `Production`과 `Preview`에 모두 추가하세요.
+
+## 10) 프록시 확인
+- 배포 완료 후:
+  - `https://mood-melody.pages.dev/api/search?query=test` 요청이 `BACKEND_URL`로 전달되는지 확인
+  - 오류 시 `BACKEND_URL` 값, MySQL 연결(DATABASE_URL/DB_USERNAME/DB_PASSWORD), 서버 로그를 확인하세요.

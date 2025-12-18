@@ -141,7 +141,7 @@
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                            <img src="https://ui-avatars.com/api/?name=User&background=6c63ff&color=fff" alt="User" class="user-avatar me-2">
+                            <img th:src="${avatarUrl}" src="https://ui-avatars.com/api/?name=User&background=6c63ff&color=fff" alt="User" class="user-avatar me-2">
                             <span sec:authentication="name">User</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
@@ -210,6 +210,11 @@
                         <div class="col-md-8">
                             <div class="welcome-text">Welcome back, <span sec:authentication="name">User</span>! 👋</div>
                             <p class="welcome-subtext">Here's what's happening with your music today.</p>
+                            <div class="mt-2">
+                                <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary" th:if="${followers} != null">
+                                    <i class="bi bi-people me-1"></i> Followers: <span th:text="${followers}">0</span>
+                                </span>
+                            </div>
                         </div>
                         <div class="col-md-4 text-md-end mt-3 mt-md-0">
                             <button class="btn btn-light">
@@ -370,6 +375,94 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Spotify Recently Played -->
+                    <div class="card mt-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-clock-history me-2"></i>Spotify Recently Played</span>
+                            <a href="#" class="btn btn-sm btn-outline-primary" id="recentlyPlayedRefresh">Refresh</a>
+                        </div>
+                        <div class="card-body">
+                            <div id="recentlyPlayedList" class="list-group"></div>
+                            <div class="text-muted small mt-2" id="recentlyPlayedHint" style="display:none;">Spotify 계정으로 로그인하면 최근 재생 목록이 표시됩니다.</div>
+                        </div>
+                    </div>
+
+                    <!-- Spotify Top Tracks -->
+                    <div class="card mt-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-bar-chart-line me-2"></i>Spotify Top Tracks</span>
+                            <div>
+                                <select class="form-select form-select-sm d-inline w-auto" id="topTracksRange">
+                                    <option value="short_term">최근 4주</option>
+                                    <option value="medium_term" selected>최근 6개월</option>
+                                    <option value="long_term">전체 기간</option>
+                                </select>
+                                <a href="#" class="btn btn-sm btn-outline-primary ms-2" id="topTracksRefresh">Refresh</a>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="topTracksList" class="list-group"></div>
+                            <div class="text-muted small mt-2" id="topTracksHint" style="display:none;">Spotify 계정으로 로그인하면 Top 트랙이 표시됩니다.</div>
+                        </div>
+                    </div>
+
+                    <!-- AI Mood Recommendations and Listening Stats -->
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <span><i class="bi bi-stars me-2"></i>AI 감정 추천</span>
+                                    <div>
+                                        <a href="#" class="btn btn-sm btn-outline-secondary me-2" id="aiAnalyzeBtn">분석</a>
+                                        <a href="#" class="btn btn-sm btn-outline-primary me-2" id="aiRecommendBtn">추천 보기</a>
+                                        <a href="#" class="btn btn-sm btn-success" id="aiSaveBtn">플레이리스트로 저장</a>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="aiMoodText" class="form-label">오늘 하루 기분을 자유롭게 적어주세요</label>
+                                        <textarea id="aiMoodText" class="form-control" rows="3" placeholder="예: 오늘은 너무 기쁘고 에너지가 넘쳐요!"></textarea>
+                                    </div>
+                                    <div class="text-muted small mb-3" id="aiMoodAnalysis" style="display:none;"></div>
+                                    <div id="aiRecoList" class="list-group"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <span>청취 통계</span>
+                                    <button class="btn btn-sm btn-outline-secondary" id="listeningStatsRefresh">새로고침</button>
+                                </div>
+                                <div class="card-body">
+                                    <div id="listeningStats">
+                                         <div class="text-muted">로그인 후 최근 청취 기반 통계를 확인하세요.</div>
+                                     </div>
+                                     <div id="listeningInsight" class="mt-2 small text-secondary"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Spotify Top Artists -->
+                    <div class="card mt-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-person-bounding-box me-2"></i>Spotify Top Artists</span>
+                            <div>
+                                <select class="form-select form-select-sm d-inline w-auto" id="topArtistsRange">
+                                    <option value="short_term">최근 4주</option>
+                                    <option value="medium_term" selected>최근 6개월</option>
+                                    <option value="long_term">전체 기간</option>
+                                </select>
+                                <a href="#" class="btn btn-sm btn-outline-primary ms-2" id="topArtistsRefresh">Refresh</a>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row" id="topArtistsList"></div>
+                            <div class="text-muted small mt-2" id="topArtistsHint" style="display:none;">Spotify 계정으로 로그인하면 Top 아티스트가 표시됩니다.</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -414,5 +507,299 @@
             });
         });
     </script>
+</body>
+</html>
+
+<script>
+(function() {
+  async function fetchJSON(url) {
+    try {
+      const res = await fetch(url, { credentials: 'same-origin' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return await res.json();
+    } catch (e) {
+      return { error: String(e) };
+    }
+  }
+
+  async function postJSON(url, body) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return await res.json();
+    } catch (e) {
+      return { error: String(e) };
+    }
+  }
+
+  function renderRecentlyPlayed(data) {
+    const list = document.getElementById('recentlyPlayedList');
+    const hint = document.getElementById('recentlyPlayedHint');
+    list.innerHTML = '';
+    if (data.error || !data.items) {
+      hint.style.display = 'block';
+      return;
+    }
+    hint.style.display = 'none';
+    data.items.slice(0, 10).forEach(item => {
+      const track = item.track || {};
+      const name = track.name || 'Unknown';
+      const artists = (track.artists || []).map(a => a.name).join(', ');
+      const playedAt = item.played_at ? new Date(item.played_at).toLocaleString() : '';
+      const image = ((track.album || {}).images || [])[0]?.url;
+      const el = document.createElement('a');
+      el.className = 'list-group-item list-group-item-action';
+      el.innerHTML = `
+        <div class="d-flex w-100 justify-content-between align-items-center">
+          <div class="d-flex align-items-center">
+            ${image ? `<img src="${image}" class="me-3" style="width:48px;height:48px;object-fit:cover;border-radius:6px;"/>` : ''}
+            <div>
+              <h6 class="mb-1">${name}</h6>
+              <p class="mb-1 text-muted small">${artists}</p>
+            </div>
+          </div>
+          <small class="text-muted">${playedAt}</small>
+        </div>`;
+      list.appendChild(el);
+    });
+  }
+
+  function renderTopTracks(data) {
+    const list = document.getElementById('topTracksList');
+    const hint = document.getElementById('topTracksHint');
+    list.innerHTML = '';
+    if (data.error || !data.items) {
+      hint.style.display = 'block';
+      return;
+    }
+    hint.style.display = 'none';
+    data.items.slice(0, 10).forEach(track => {
+      const name = track.name || 'Unknown';
+      const artists = (track.artists || []).map(a => a.name).join(', ');
+      const image = ((track.album || {}).images || [])[0]?.url;
+      const el = document.createElement('a');
+      el.className = 'list-group-item list-group-item-action';
+      el.innerHTML = `
+        <div class="d-flex align-items-center">
+          ${image ? `<img src="${image}" class="me-3" style="width:48px;height:48px;object-fit:cover;border-radius:6px;"/>` : ''}
+          <div>
+            <h6 class="mb-1">${name}</h6>
+            <p class="mb-1 text-muted small">${artists}</p>
+          </div>
+        </div>`;
+      list.appendChild(el);
+    });
+  }
+
+  function renderTopArtists(data) {
+    const list = document.getElementById('topArtistsList');
+    const hint = document.getElementById('topArtistsHint');
+    list.innerHTML = '';
+    if (data.error || !data.items) {
+      hint.style.display = 'block';
+      return;
+    }
+    hint.style.display = 'none';
+    data.items.slice(0, 12).forEach(artist => {
+      const name = artist.name || 'Unknown';
+      const image = (artist.images || [])[0]?.url;
+      const el = document.createElement('div');
+      el.className = 'col-6 col-md-3 mb-3';
+      el.innerHTML = `
+        <div class="d-flex align-items-center">
+          ${image ? `<img src="${image}" class="me-3" style="width:48px;height:48px;object-fit:cover;border-radius:50%;"/>` : ''}
+          <div>
+            <h6 class="mb-1">${name}</h6>
+          </div>
+        </div>`;
+      list.appendChild(el);
+    });
+  }
+
+  // AI Mood analysis & recommendations
+  async function analyzeMoodText() {
+    const text = document.getElementById('aiMoodText').value.trim();
+    const analysisEl = document.getElementById('aiMoodAnalysis');
+    analysisEl.style.display = 'none';
+    if (!text) return;
+    const res = await postJSON('/api/analyze-mood-params', { text });
+    if (res.error) {
+      analysisEl.textContent = '분석 오류: ' + res.error;
+      aiParams = null;
+    } else {
+      aiParams = {
+        seed_genres: res.seed_genres || [],
+        target_valence: res.target_valence ?? null,
+        target_energy: res.target_energy ?? null,
+        target_danceability: res.target_danceability ?? null,
+      };
+      const parts = [];
+      if (aiParams.seed_genres?.length) parts.push(`장르: ${aiParams.seed_genres.join(', ')}`);
+      if (aiParams.target_valence != null) parts.push(`밸런스(valence): ${aiParams.target_valence}`);
+      if (aiParams.target_energy != null) parts.push(`에너지: ${aiParams.target_energy}`);
+      if (aiParams.target_danceability != null) parts.push(`댄서빌리티: ${aiParams.target_danceability}`);
+      analysisEl.textContent = parts.length ? ('분석 파라미터 → ' + parts.join(' | ')) : '분석 파라미터 없음';
+      if (typeof lastListeningStats !== 'undefined' && lastListeningStats) {
+        updateListeningInsight(lastListeningStats);
+      }
+    }
+    analysisEl.style.display = 'block';
+  }
+
+  async function loadMoodRecommendations() {
+    const text = document.getElementById('aiMoodText').value.trim();
+    const list = document.getElementById('aiRecoList');
+    list.innerHTML = '';
+    if (!text) return;
+    const payload = { mood: text, usePersonalized: true, params: aiParams };
+    const res = await postJSON('/api/recommendations/advanced', payload);
+    if (res.error) {
+      const el = document.createElement('div');
+      el.className = 'text-danger small';
+      el.textContent = '추천 오류: ' + res.error;
+      list.appendChild(el);
+      return;
+    }
+    const tracks = res.tracks || [];
+    aiRecoTracks = tracks;
+    // Render as grid with album art and Spotify links
+    const grid = document.createElement('div');
+    grid.className = 'row';
+    tracks.forEach(t => {
+      const col = document.createElement('div');
+      col.className = 'col-12 col-md-6 mb-3';
+      const img = t.albumImage ? `<img src="${t.albumImage}" alt="${t.name}" style="width:64px;height:64px;object-fit:cover;border-radius:6px;" class="me-3"/>` : '';
+      const link = t.spotifyUrl ? `<a href="${t.spotifyUrl}" target="_blank" rel="noopener">열기</a>` : '';
+      col.innerHTML = `
+        <div class="d-flex align-items-center">
+          ${img}
+          <div>
+            <div class="fw-semibold">${t.name}</div>
+            <div class="text-muted small">${t.artists || ''}</div>
+            <div class="small">${link}</div>
+          </div>
+        </div>
+      `;
+      grid.appendChild(col);
+    });
+    list.appendChild(grid);
+
+    if (res.playlistDescription) {
+      const desc = document.createElement('div');
+      desc.className = 'text-muted small mt-2';
+      desc.textContent = '플레이리스트 설명: ' + res.playlistDescription;
+      list.appendChild(desc);
+    }
+  }
+
+    const saveRecommendationsToPlaylist = async () => {
+        const name = prompt("플레이리스트 이름을 입력하세요", "Mood Melody 추천") || "Mood Melody 추천";
+        const description = prompt("설명을 입력하세요", "AI 감정 추천 기반 자동 생성") || "AI 감정 추천 기반 자동 생성";
+        const isPublic = false;
+
+        const uris = (typeof aiRecoTracks !== 'undefined' && Array.isArray(aiRecoTracks)) ? aiRecoTracks.map(t => t.uri).filter(Boolean) : [];
+        if (!uris.length) {
+            alert("저장할 추천 곡이 없습니다.");
+            return;
+        }
+
+        const resp = await fetch("/api/spotify/playlist", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, description, public: isPublic, trackUris: uris })
+        });
+        if (!resp.ok) {
+            const t = await resp.text();
+            alert("플레이리스트 저장 실패: " + t);
+            return;
+        }
+        const data = await resp.json();
+        alert("플레이리스트가 생성되었습니다: " + (data.id || "success"));
+    };
+
+    let lastListeningStats = null;
+    const loadListeningStats = async () => {
+        try {
+            const resp = await fetch("/api/spotify/stats?limit=50");
+            if (!resp.ok) {
+                const t = await resp.text();
+                document.getElementById("listeningStats").innerHTML = `<div class='text-danger'>통계 로드 실패: ${t}</div>`;
+                return;
+            }
+            const s = await resp.json();
+            lastListeningStats = s;
+            renderListeningStats(s);
+        } catch (e) {
+            document.getElementById("listeningStats").innerHTML = `<div class='text-danger'>통계 로드 실패: ${e}</div>`;
+        }
+    };
+
+    const renderListeningStats = (s) => {
+        const fmt = (v) => (Math.round(v * 100) / 100).toFixed(2);
+        const percent = (v) => Math.min(100, Math.max(0, Math.round(v * 100)));
+        const bar = (label, v) => `
+            <div class="mb-2">
+                <div class="d-flex justify-content-between"><span>${label}</span><span>${fmt(v)}</span></div>
+                <div class="progress" style="height: 8px;">
+                    <div class="progress-bar" role="progressbar" style="width: ${percent(v)}%" aria-valuenow="${percent(v)}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>`;
+        const html = `
+            <div class="mb-2 text-muted">최근 ${s.count}곡 기준 평균</div>
+            ${bar("댄서빌리티", s.avg_danceability)}
+            ${bar("에너지", s.avg_energy)}
+            ${bar("밸런스(Valence)", s.avg_valence)}
+            <div class="mt-3 small">템포 평균: <strong>${fmt(s.avg_tempo)}</strong> BPM</div>
+        `;
+        document.getElementById("listeningStats").innerHTML = html;
+        updateListeningInsight(s);
+    };
+
+    const updateListeningInsight = (s) => {
+        const el = document.getElementById("listeningInsight");
+        if (!el) return;
+        if (!window.aiParams || (!aiParams.target_energy && !aiParams.target_valence)) {
+            el.textContent = "감정 분석 후 인사이트가 표시됩니다.";
+            return;
+        }
+        const fmt = (v) => (Math.round(v * 100) / 100).toFixed(2);
+        const te = aiParams.target_energy;
+        const tv = aiParams.target_valence;
+        const moodEnergyLabel = te != null ? (te >= 0.6 ? "활기↑" : "침착↓") : null;
+        const moodValenceLabel = tv != null ? (tv >= 0.6 ? "밝음↑" : "어둡↓") : null;
+        const nowEnergyLabel = s.avg_energy >= 0.6 ? "에너지↑" : "에너지↓";
+        const nowValenceLabel = s.avg_valence >= 0.6 ? "밸런스↑" : "밸런스↓";
+        const matchEnergy = te != null ? ((te >= 0.6) === (s.avg_energy >= 0.6)) : null;
+        const matchValence = tv != null ? ((tv >= 0.6) === (s.avg_valence >= 0.6)) : null;
+        let text = "";
+        if (moodEnergyLabel) text += `오늘 감정은 ${moodEnergyLabel}`;
+        if (moodValenceLabel) text += (text ? ", " : "") + `톤은 ${moodValenceLabel}`;
+        if (matchEnergy != null) text += `, 최근 청취도 ${nowEnergyLabel}(${fmt(s.avg_energy)})` + (matchEnergy ? "로 일치합니다" : "로 대조적입니다");
+        if (matchValence != null) text += `, 톤은 ${nowValenceLabel}(${fmt(s.avg_valence)})` + (matchValence ? "로 일치합니다" : "로 대조적입니다");
+        el.textContent = text ? (text + ".") : "감정-청취 인사이트를 계산할 수 없습니다.";
+    };
+
+    document.getElementById("listeningStatsRefresh")?.addEventListener("click", (e) => { e.preventDefault(); loadListeningStats(); });
+    // 자동 로드 시도
+    loadListeningStats();
+  // ... existing code ...
+  document.getElementById('aiAnalyzeBtn').addEventListener('click', function(e) {
+    e.preventDefault(); analyzeMoodText();
+  });
+  document.getElementById('aiRecommendBtn').addEventListener('click', function(e) {
+    e.preventDefault(); loadMoodRecommendations();
+  });
+  document.getElementById('aiSaveBtn').addEventListener('click', function(e) {
+    e.preventDefault(); saveRecommendationsToPlaylist();
+  });
+
+  // ... existing code ...
+})();
+</script>
 </body>
 </html>

@@ -5,13 +5,12 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import se.michaelthelin.spotify.SpotifyApi
 import se.michaelthelin.spotify.SpotifyHttpManager
-import se.michaelthelin.spotify.model.credentials.ClientCredentials
 
 @Configuration
 class SpotifyConfig(
-    @Value("\${spotify.clientId}") private val clientId: String,
-    @Value("\${spotify.clientSecret}") private val clientSecret: String,
-    @Value("\${spotify.redirectUri}") private val redirectUri: String
+    @Value("\${spotify.client.id}") private val clientId: String,
+    @Value("\${spotify.client.secret}") private val clientSecret: String,
+    @Value("\${spotify.client.redirect-uri}") private val redirectUri: String
 ) {
     
     @Bean
@@ -20,14 +19,6 @@ class SpotifyConfig(
             .setClientId(clientId)
             .setClientSecret(clientSecret)
             .setRedirectUri(SpotifyHttpManager.makeUri(redirectUri))
-            .build()
-    }
-    
-    @Bean
-    fun spotifyClientCredentials(): ClientCredentials {
-        return ClientCredentials.Builder()
-            .setClientId(clientId)
-            .setClientSecret(clientSecret)
             .build()
     }
 }

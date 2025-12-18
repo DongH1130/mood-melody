@@ -73,6 +73,34 @@
             margin-right: 10px;
         }
         
+        .btn-spotify {
+            background-color: #1DB954;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            width: 100%;
+            max-width: 300px;
+            margin: 0.25rem 0 1rem;
+        }
+
+        .btn-spotify:hover {
+            background-color: #19a84a;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(29, 185, 84, 0.3);
+            color: white;
+        }
+
+        .btn-spotify i {
+            font-size: 1.2rem;
+            margin-right: 10px;
+        }
+        
         .feature-icon {
             font-size: 2.5rem;
             color: var(--primary-color);
@@ -196,6 +224,17 @@
                                     <a href="/oauth2/authorization/google" class="btn btn-google">
                                         <i class="bi bi-google"></i> Continue with Google
                                     </a>
+                                    <a href="/oauth2/authorization/spotify" class="btn btn-spotify">
+                                        <i class="bi bi-music-note-beamed"></i> Continue with Spotify
+                                    </a>
+                                     
+                                     <div class="divider">
+                                         <span class="divider-text">or</span>
+                                     </div>
+
+                                    <div th:if="${param.error}" class="alert alert-danger mt-3" role="alert">
+                                        로그인에 실패했습니다. 다시 시도하거나 다른 계정으로 로그인하세요.
+                                    </div>
                                     
                                     <div class="divider">
                                         <span class="divider-text">or</span>

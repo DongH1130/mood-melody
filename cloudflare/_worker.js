@@ -32,14 +32,8 @@ export default {
       }
 
       // 원본 요청을 백엔드로 전달
-      const init = {
-        method: request.method,
-        headers: request.headers,
-        body: ['GET', 'HEAD'].includes(request.method) ? undefined : request.body,
-        redirect: 'follow'
-      };
-
-      const response = await fetch(backend.toString(), init);
+      const backendReq = new Request(backend.toString(), request);
+      const response = await fetch(backendReq);
 
       // 동일 도메인 사용 시 CORS 불필요. 필요하다면 헤더 보정
       const resHeaders = new Headers(response.headers);

@@ -16,6 +16,7 @@ class SecurityConfig {
             .authorizeHttpRequests { requests ->
                 requests
                     .requestMatchers("/", "/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
+                    .requestMatchers("/api/ai/status").permitAll()
                     .anyRequest().authenticated()
             }
             .oauth2Login { oauth2 ->

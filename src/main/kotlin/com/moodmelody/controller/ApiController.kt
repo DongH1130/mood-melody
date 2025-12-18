@@ -56,13 +56,19 @@ class ApiController(
     }
 
     @PostMapping("/analyze-mood-params")
-    fun analyzeMoodParams(@RequestBody request: Map<String, String>): ResponseEntity<Map<String, Any?>> {
-        val text = request["text"]?.trim().orEmpty()
+    fun analyzeMoodParams(@RequestBody request: Map<String, Any>): ResponseEntity<Map<String, Any?>> {
+        val text = (request["text"] as? String)?.trim().orEmpty()
+        val aiOnly = (request["aiOnly"] as? Boolean)
+            ?: ((request["aiOnly"] as? String)?.toBoolean() ?: false)
         if (text.isBlank()) return ResponseEntity.ok(mapOf("error" to "텍스트가 비어 있습니다."))
         return try {
             val params = geminiService.analyzeMoodParams(text)
             if (params == null) {
-                // 결제 없이 동작하는 룰 기반 파라미터로 폴백
+                if (aiOnly) {
+                    // AI만 사용하는 모드에서는 폴백 없이 오류 반환
+                    return ResponseEntity.ok(mapOf("error" to "AI 분석 실패"))
+                }
+                // 하이브리드 모드: 룰 기반 파라미터로 폴백
                 val rb = spotifyService.deriveParamsFromText(text)
                 ResponseEntity.ok(
                     mapOf(
@@ -73,29 +79,46 @@ class ApiController(
                     )
                 )
             } else {
-                val rb = spotifyService.deriveParamsFromText(text)
-                val generic = setOf("pop", "indie", "rock")
-                val seedGenres = if (params.seed_genres.isNullOrEmpty()) {
-                    rb.genres
-                } else {
-                    val normalized = params.seed_genres.map { it.lowercase() }
-                    if (normalized.all { generic.contains(it) } && rb.genres.isNotEmpty()) rb.genres else params.seed_genres
-                }
-                val targetValence = params.target_valence ?: rb.valence
-                val targetEnergy = params.target_energy ?: rb.energy
-                val targetDanceability = params.target_danceability ?: rb.danceability
-                ResponseEntity.ok(
-                    mapOf(
-                        "seed_genres" to seedGenres,
-                        "target_valence" to targetValence,
-                        "target_energy" to targetEnergy,
-                        "target_danceability" to targetDanceability
+                if (aiOnly) {
+                    // AI 전용 모드: 가드레일/보정 없이 AI 결과 그대로 반환
+                    ResponseEntity.ok(
+                        mapOf(
+                            "seed_genres" to params.seed_genres,
+                            "target_valence" to params.target_valence,
+                            "target_energy" to params.target_energy,
+                            "target_danceability" to params.target_danceability
+                        )
                     )
-                )
+                } else {
+                    // 하이브리드 모드: generic일 때 룰 기반으로 보정
+                    val rb = spotifyService.deriveParamsFromText(text)
+                    val generic = setOf("pop", "indie", "rock")
+                    val seedGenres = if (params.seed_genres.isNullOrEmpty()) {
+                        rb.genres
+                    } else {
+                        val normalized = params.seed_genres.map { it.lowercase() }
+                        if (normalized.all { generic.contains(it) } && rb.genres.isNotEmpty()) rb.genres else params.seed_genres
+                    }
+                    val targetValence = params.target_valence ?: rb.valence
+                    val targetEnergy = params.target_energy ?: rb.energy
+                    val targetDanceability = params.target_danceability ?: rb.danceability
+                    ResponseEntity.ok(
+                        mapOf(
+                            "seed_genres" to seedGenres,
+                            "target_valence" to targetValence,
+                            "target_energy" to targetEnergy,
+                            "target_danceability" to targetDanceability
+                        )
+                    )
+                }
             }
         } catch (e: Exception) {
             log.warn("/analyze-mood-params 처리 실패: {}", e.message)
-            // 예외 시에도 룰 기반으로 안전한 응답 반환
+            if (aiOnly) {
+                // AI 전용 모드에서는 예외 시에도 폴백하지 않고 오류 반환
+                return ResponseEntity.ok(mapOf("error" to (e.message ?: "AI 분석 실패")))
+            }
+            // 하이브리드 모드: 예외 시에도 룰 기반으로 안전한 응답 반환
             val rb = spotifyService.deriveParamsFromText(text)
             ResponseEntity.ok(
                 mapOf(

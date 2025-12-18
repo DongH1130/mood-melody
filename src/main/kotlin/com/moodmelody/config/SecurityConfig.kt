@@ -13,10 +13,14 @@ class SecurityConfig {
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
-            .authorizeHttpRequests { requests ->
-                requests
-                    .requestMatchers("/", "/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
-                    .requestMatchers("/api/ai/status").permitAll()
+            .authorizeHttpRequests { authorize ->
+                authorize
+                    .requestMatchers(
+                        "/", "/css/**", "/js/**", "/images/**", "/webjars/**",
+                        "/oauth2/**", "/login/oauth2/**",
+                        "/swagger-ui/**", "/v3/api-docs/**",
+                        "/api/ai/status", "/api/analyze-mood-params"
+                    ).permitAll()
                     .anyRequest().authenticated()
             }
             .oauth2Login { oauth2 ->

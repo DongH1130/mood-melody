@@ -73,7 +73,7 @@ class SpotifyService(
                 genres = listOf("rock", "edm", "dance")
                 valence = 0.8f; energy = 0.9f; danceability = 0.6f
             }
-            any("우울", "슬프", "sad", "down") -> {
+            any("우울", "우울해", "슬프", "슬픔", "침울", "꿀꿀", "blue", "sad", "down", "depress") -> {
                 genres = listOf("acoustic", "ambient", "classical")
                 valence = 0.2f; energy = 0.3f; danceability = 0.2f
             }

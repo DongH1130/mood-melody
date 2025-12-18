@@ -46,7 +46,7 @@ class GeminiService(
         val prompt = """
             너는 음악 추천용 파라미터만 JSON으로 반환하는 엔진이다.
             아래 규칙을 반드시 지켜라:
-            - 출력은 오직 JSON 한 덩어리만, 설명/코드블록 금지.
+            - 출력은 오직 JSON 한 덩어리만, 설명/코드블록/마크다운 금지.
             - 키 이름은 seed_genres, target_valence, target_energy, target_danceability.
             - seed_genres는 Spotify 장르 슬러그 배열(pop, rock, edm, ambient 등).
             - 각 target_* 값은 0.0~1.0 사이의 숫자 또는 null.
@@ -54,13 +54,34 @@ class GeminiService(
             사용자 기분 텍스트: "$text"
             JSON만 출력해.
         """.trimIndent()
-        val response = generateContent(prompt) ?: return null
-        return try {
-            mapper.readValue<MoodParams>(response)
-        } catch (e: Exception) {
-            log.warn("Gemini JSON 파싱 실패: {}", e.message)
-            null
+        var response = generateContent(prompt)
+        if (response == null) {
+            // 보조 공급자 시도(OpenRouter) — 키가 존재하면 사용
+            response = generateContentViaOpenRouter(prompt)
+            if (response == null) return null
         }
+        // 1차 파싱 시도
+        try {
+            return mapper.readValue<MoodParams>(response)
+        } catch (e: Exception) {
+            log.warn("Gemini JSON 파싱 실패(원문 유지): {}", e.message)
+        }
+        // 2차: 코드 펜스/마크다운 제거 및 JSON 슬라이스 추출
+        val stripped = response
+            .replace("```json", "")
+            .replace("```", "")
+            .trim()
+        val start = stripped.indexOf('{')
+        val end = stripped.lastIndexOf('}')
+        if (start >= 0 && end > start) {
+            val slice = stripped.substring(start, end + 1)
+            try {
+                return mapper.readValue<MoodParams>(slice)
+            } catch (e: Exception) {
+                log.warn("Gemini JSON 파싱 실패(정제 후): {}", e.message)
+            }
+        }
+        return null
     }
 
     fun generatePlaylistDescription(mood: String, tracks: List<String>): String {

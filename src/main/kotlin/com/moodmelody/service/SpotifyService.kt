@@ -161,7 +161,8 @@ class SpotifyService(
         genres: List<String> = emptyList(),
         targetValence: Float? = null,
         targetEnergy: Float? = null,
-        targetDanceability: Float? = null
+        targetDanceability: Float? = null,
+        strict: Boolean = false
     ): List<Map<String, Any>> {
         try {
             ensureAccessToken()
@@ -169,6 +170,9 @@ class SpotifyService(
             // Sanitize genres to Spotify's allowed seed list
             var safeGenres = sanitizeGenres(genres)
             if (safeGenres.isEmpty() && seedTracks.isEmpty()) {
+                if (strict) {
+                    throw IllegalArgumentException("AI 파라미터 없음: seedGenres/seedTracks 미지정")
+                }
                 // Ensure at least one valid seed genre exists to avoid Spotify 400
                 val allowed = getAllowedGenreSeeds()
                 val defaults = listOf("pop", "rock", "indie").filter { allowed.contains(it) }
@@ -209,6 +213,9 @@ class SpotifyService(
             }
         } catch (e: Exception) {
             log.warn("고급 추천 실패, 검색 기반 폴백 적용: {}", e.message)
+            if (strict) {
+                throw e
+            }
             val allowed = getAllowedGenreSeeds()
             val baseGenres = sanitizeGenres(genres).ifEmpty { listOf("pop", "rock", "indie").filter { allowed.contains(it) } }
             return fallbackRecommendationsBySearch(baseGenres, limit = 12)

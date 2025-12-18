@@ -198,11 +198,10 @@ class ApiController(
                 ids.take(5).toList()
             } else emptyList()
 
+            val strictParams = (request["strictParams"] as? Boolean) ?: false
             var effectiveGenres = if (seedGenres.isNotEmpty()) seedGenres else emptyList()
-            // 폴백: 시드 트랙과 장르가 모두 없으면 mood 기반 룰베이스 장르로 대체
-            if (seedTracks.isEmpty() && effectiveGenres.isEmpty()) {
-                val rb = spotifyService.deriveParamsFromText(mood)
-                effectiveGenres = if (rb.genres.isNotEmpty()) rb.genres else listOf("pop", "indie", "rock")
+            if (strictParams && seedTracks.isEmpty() && effectiveGenres.isEmpty()) {
+                throw IllegalArgumentException("AI 파라미터 없음: 장르/시드 트랙이 비어있음")
             }
 
             val tracks = spotifyService.getRecommendationsAdvanced(
@@ -210,7 +209,8 @@ class ApiController(
                 genres = effectiveGenres,
                 targetValence = targetValence,
                 targetEnergy = targetEnergy,
-                targetDanceability = targetDanceability
+                targetDanceability = targetDanceability,
+                strict = strictParams
             )
 
             val desc = try {

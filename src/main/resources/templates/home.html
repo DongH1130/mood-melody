@@ -386,10 +386,6 @@
                                     <div class="mb-3">
                                         <label for="aiMoodText" class="form-label">오늘 하루 기분을 자유롭게 적어주세요</label>
                                         <textarea id="aiMoodText" class="form-control" rows="3" placeholder="예: 오늘은 너무 기쁘고 에너지가 넘쳐요!"></textarea>
-                                        <div class="form-check mt-2">
-                                            <input class="form-check-input" type="checkbox" id="aiStrictToggle">
-                                            <label class="form-check-label" for="aiStrictToggle">AI만 분석(키워드 매핑 비활성)</label>
-                                        </div>
                                     </div>
                                     <div class="text-muted small mb-3" id="aiMoodAnalysis" style="display:none;"></div>
                                     <div id="aiRecoList" class="list-group"></div>
@@ -659,8 +655,7 @@
     const analysisEl = document.getElementById('aiMoodAnalysis');
     analysisEl.style.display = 'none';
     if (!text) return;
-    const strict = !!document.getElementById('aiStrictToggle')?.checked;
-    const res = await postJSON('/api/analyze-mood-params', { text, aiOnly: strict });
+    const res = await postJSON('/api/analyze-mood-params', { text, aiOnly: true });
     if (res.error) {
       analysisEl.textContent = '분석 오류: ' + res.error;
       aiParams = null;
@@ -689,7 +684,7 @@
     const list = document.getElementById('aiRecoList');
     list.innerHTML = '';
     if (!text) return;
-    const payload = { mood: text, usePersonalized: true, params: aiParams };
+    const payload = { mood: text, usePersonalized: true, strictParams: true, params: aiParams };
     const res = await postJSON('/api/recommendations/advanced', payload);
     if (res.error) {
       const el = document.createElement('div');
@@ -749,7 +744,7 @@
       target_danceability: jitter(base.target_danceability),
     };
 
-    const res = await postJSON('/api/recommendations/advanced', { mood: text, usePersonalized: true, params });
+    const res = await postJSON('/api/recommendations/advanced', { mood: text, usePersonalized: true, strictParams: true, params });
     if (res.error) {
       const el = document.createElement('div');
       el.className = 'text-danger small';

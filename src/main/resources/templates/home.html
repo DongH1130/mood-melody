@@ -655,7 +655,7 @@
     const analysisEl = document.getElementById('aiMoodAnalysis');
     analysisEl.style.display = 'none';
     if (!text) return;
-    const res = await postJSON('/api/analyze-mood-params', { text, aiOnly: true });
+    const res = await postJSON('/api/analyze-mood-params', { text, aiOnly: false });
     if (res.error) {
       analysisEl.textContent = '분석 오류: ' + res.error;
       aiParams = null;

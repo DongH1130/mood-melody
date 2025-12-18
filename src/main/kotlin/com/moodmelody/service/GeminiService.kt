@@ -56,7 +56,7 @@ class GeminiService(
         """.trimIndent()
         var response = generateContent(prompt)
         if (response == null) {
-            // 보조 공급자 시도(OpenRouter) — 키가 존재하면 사용
+            // 1차: 기본 공급자 실패 시 OpenRouter로 폴백
             response = generateContentViaOpenRouter(prompt)
             if (response == null) return null
         }
@@ -65,6 +65,26 @@ class GeminiService(
             return mapper.readValue<MoodParams>(response)
         } catch (e: Exception) {
             log.warn("Gemini JSON 파싱 실패(원문 유지): {}", e.message)
+        }
+        // 1.5차: 기본 공급자가 응답을 줬지만 JSON 파싱 실패 시 OpenRouter 재시도
+        run {
+            val orAttempt = generateContentViaOpenRouter(prompt)
+            if (orAttempt != null) {
+                val ostripped = orAttempt
+                    .replace("```json", "")
+                    .replace("```", "")
+                    .trim()
+                val ostart = ostripped.indexOf('{')
+                val oend = ostripped.lastIndexOf('}')
+                if (ostart >= 0 && oend > ostart) {
+                    val oslice = ostripped.substring(ostart, oend + 1)
+                    try {
+                        return mapper.readValue<MoodParams>(oslice)
+                    } catch (e: Exception) {
+                        log.warn("OpenRouter JSON 파싱 실패(1차): {}", e.message)
+                    }
+                }
+            }
         }
         // 2차: 코드 펜스/마크다운 제거 및 JSON 슬라이스 추출
         val stripped = response
@@ -106,6 +126,24 @@ class GeminiService(
                     return mapper.readValue<MoodParams>(rslice)
                 } catch (e: Exception) {
                     log.warn("Gemini JSON 파싱 실패(재프롬프트 후): {}", e.message)
+                }
+            }
+            // 3.5차: 재프롬프트 결과도 파싱 실패 시 OpenRouter 재시도
+            val orRetry = generateContentViaOpenRouter(retryPrompt)
+            if (orRetry != null) {
+                val orStripped = orRetry
+                    .replace("```json", "")
+                    .replace("```", "")
+                    .trim()
+                val ors = orStripped.indexOf('{')
+                val ore = orStripped.lastIndexOf('}')
+                if (ors >= 0 && ore > ors) {
+                    val orSlice = orStripped.substring(ors, ore + 1)
+                    try {
+                        return mapper.readValue<MoodParams>(orSlice)
+                    } catch (e: Exception) {
+                        log.warn("OpenRouter JSON 파싱 실패(재프롬프트): {}", e.message)
+                    }
                 }
             }
         }

@@ -81,6 +81,34 @@ class GeminiService(
                 log.warn("Gemini JSON 파싱 실패(정제 후): {}", e.message)
             }
         }
+        // 3차: 재프롬프트 (스트릭트 JSON 및 예시 포함)
+        val retryPrompt = """
+            너는 음악 추천용 파라미터만 JSON으로 반환하는 엔진이다.
+            오직 한 개의 JSON 객체만 출력해. 설명/마크다운/코드펜스 모두 금지.
+            키: seed_genres (배열), target_valence (0.0~1.0), target_energy (0.0~1.0), target_danceability (0.0~1.0)
+            예시: {"seed_genres":["pop","dance"],"target_valence":0.9,"target_energy":0.8,"target_danceability":0.8}
+            사용자 기분 텍스트: "$text"
+        """.trimIndent()
+        var retry = generateContent(retryPrompt)
+        if (retry == null) {
+            retry = generateContentViaOpenRouter(retryPrompt)
+        }
+        if (retry != null) {
+            val rstripped = retry
+                .replace("```json", "")
+                .replace("```", "")
+                .trim()
+            val rstart = rstripped.indexOf('{')
+            val rend = rstripped.lastIndexOf('}')
+            if (rstart >= 0 && rend > rstart) {
+                val rslice = rstripped.substring(rstart, rend + 1)
+                try {
+                    return mapper.readValue<MoodParams>(rslice)
+                } catch (e: Exception) {
+                    log.warn("Gemini JSON 파싱 실패(재프롬프트 후): {}", e.message)
+                }
+            }
+        }
         return null
     }
 

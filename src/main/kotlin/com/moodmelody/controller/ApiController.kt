@@ -73,12 +73,23 @@ class ApiController(
                     )
                 )
             } else {
+                val rb = spotifyService.deriveParamsFromText(text)
+                val generic = setOf("pop", "indie", "rock")
+                val seedGenres = if (params.seed_genres.isNullOrEmpty()) {
+                    rb.genres
+                } else {
+                    val normalized = params.seed_genres.map { it.lowercase() }
+                    if (normalized.all { generic.contains(it) } && rb.genres.isNotEmpty()) rb.genres else params.seed_genres
+                }
+                val targetValence = params.target_valence ?: rb.valence
+                val targetEnergy = params.target_energy ?: rb.energy
+                val targetDanceability = params.target_danceability ?: rb.danceability
                 ResponseEntity.ok(
                     mapOf(
-                        "seed_genres" to params.seed_genres,
-                        "target_valence" to params.target_valence,
-                        "target_energy" to params.target_energy,
-                        "target_danceability" to params.target_danceability
+                        "seed_genres" to seedGenres,
+                        "target_valence" to targetValence,
+                        "target_energy" to targetEnergy,
+                        "target_danceability" to targetDanceability
                     )
                 )
             }

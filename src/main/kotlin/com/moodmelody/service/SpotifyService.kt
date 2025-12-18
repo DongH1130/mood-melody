@@ -77,7 +77,7 @@ class SpotifyService(
                 genres = listOf("acoustic", "ambient", "classical")
                 valence = 0.2f; energy = 0.3f; danceability = 0.2f
             }
-            any("차분", "평온", "calm", "relax", "편안") -> {
+            any("차분", "평온", "잔잔", "조용", "calm", "relax", "편안") -> {
                 genres = listOf("chill", "ambient", "acoustic")
                 valence = 0.6f; energy = 0.3f; danceability = 0.3f
             }

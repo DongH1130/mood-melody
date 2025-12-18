@@ -242,4 +242,9 @@ class ApiController(
         val tracks = spotifyService.getPlaylistTracks(playlistId)
         return ResponseEntity.ok(mapOf("tracks" to tracks))
     }
+    
+    @GetMapping("/ai/status")
+    fun aiStatus(): ResponseEntity<Map<String, Any>> {
+        return ResponseEntity.ok(geminiService.aiStatus())
+    }
 }

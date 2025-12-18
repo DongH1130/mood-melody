@@ -224,6 +224,16 @@ class GeminiService(
             return null
         }
     }
+    // --- AI provider 상태 확인용 ---
+    fun aiStatus(): Map<String, Any> {
+        return mapOf(
+            "provider" to provider,
+            "hasGeminiKey" to (apiKey.isNotBlank()),
+            "hasOpenRouterKey" to (orApiKey.isNotBlank()),
+            "geminiModel" to model,
+            "openrouterModel" to orModel
+        )
+    }
 }
 
 // --- JSON 파싱용 데이터 클래스 ---

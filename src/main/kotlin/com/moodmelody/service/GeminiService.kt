@@ -232,9 +232,11 @@ class GeminiService(
             val body = mapOf(
                 "model" to orModel,
                 "messages" to listOf(
-                    mapOf("role" to "system", "content" to "너는 음악 추천과 감정 분석을 돕는 어시스턴트야."),
+                    mapOf("role" to "system", "content" to "너는 음악 추천과 감정 분석을 돕는 어시스턴트야. 반드시 순수 JSON으로만 응답해."),
                     mapOf("role" to "user", "content" to userText)
-                )
+                ),
+                "temperature" to 0.2,
+                "response_format" to mapOf("type" to "json_object")
             )
             val json = mapper.writeValueAsString(body)
             httpPost.entity = StringEntity(json, ContentType.APPLICATION_JSON)

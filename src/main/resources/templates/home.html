@@ -33,9 +33,12 @@
         }
         
         .sidebar {
-            min-height: calc(100vh - 56px);
+            position: sticky;
+            top: 0;
+            height: calc(100vh);
             background: white;
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+            overflow-y: auto;
         }
         
         .nav-link {
@@ -169,7 +172,7 @@
                 <div class="p-3">
                     <ul class="nav flex-column mt-3">
                         <li class="nav-item">
-                            <a class="nav-link active" href="#">
+                            <a class="nav-link active" href="#" id="dashboardNav">
                                 <i class="bi bi-house-door"></i> Dashboard
                             </a>
                         </li>
@@ -179,22 +182,22 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link" href="#" id="moodTrackerNav">
                                 <i class="bi bi-emoji-smile"></i> Mood Tracker
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link" href="#" id="insightsNav">
                                 <i class="bi bi-graph-up"></i> Insights
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link" href="#" id="favoritesNav">
                                 <i class="bi bi-heart"></i> Favorites
                             </a>
                         </li>
                         <li class="nav-item mt-4">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link" href="#" id="settingsNav">
                                 <i class="bi bi-gear"></i> Settings
                             </a>
                         </li>
@@ -205,7 +208,7 @@
             <!-- Main Content -->
             <div class="col-md-10 p-4">
                 <!-- Welcome Card -->
-                <div class="welcome-card">
+                <div class="welcome-card" id="dashboardTop">
                     <div class="row align-items-center">
                         <div class="col-md-8">
                             <div class="welcome-text">Welcome back, <span sec:authentication="name">User</span>! 👋</div>
@@ -217,7 +220,7 @@
                             </div>
                         </div>
                         <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                            <button class="btn btn-light">
+                            <button class="btn btn-light" id="newPlaylistBtn">
                                 <i class="bi bi-plus-lg me-2"></i>New Playlist
                             </button>
                         </div>
@@ -230,7 +233,7 @@
                         <div class="card">
                              <div class="card-header d-flex justify-content-between align-items-center">
                                  <span><i class="bi bi-activity me-2"></i>Recent Activity</span>
-                                <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+                                <a href="#" class="btn btn-sm btn-outline-primary" id="recentViewAllBtn">View All</a>
                             </div>
                             <div class="card-body">
                                 <div class="d-flex mb-4">
@@ -280,13 +283,13 @@
                                 <i class="bi bi-lightning-charge me-2"></i>Quick Actions
                             </div>
                             <div class="card-body">
-                                <button class="btn btn-outline-primary w-100 mb-2">
+                                <button class="btn btn-outline-primary w-100 mb-2" id="qaAddMoodBtn">
                                     <i class="bi bi-plus-circle me-2"></i>Add New Mood
                                 </button>
-                                <button class="btn btn-outline-secondary w-100 mb-2">
+                                <button class="btn btn-outline-secondary w-100 mb-2" id="qaShuffleBtn">
                                     <i class="bi bi-shuffle me-2"></i>Shuffle Play
                                 </button>
-                                <button class="btn btn-outline-success w-100">
+                                <button class="btn btn-outline-success w-100" id="qaVoiceBtn">
                                     <i class="bi bi-mic me-2"></i>Voice Command
                                 </button>
                             </div>
@@ -337,7 +340,7 @@
                     </div>
 
                     <!-- Spotify Recently Played -->
-                    <div class="card mt-4">
+                    <div class="card mt-4" id="recentlyPlayedSection">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <span><i class="bi bi-clock-history me-2"></i>Spotify Recently Played</span>
                             <a href="#" class="btn btn-sm btn-outline-primary" id="recentlyPlayedRefresh">Refresh</a>
@@ -349,7 +352,7 @@
                     </div>
 
                     <!-- Spotify Top Tracks -->
-                    <div class="card mt-4">
+                    <div class="card mt-4" id="topTracksSection">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <span><i class="bi bi-bar-chart-line me-2"></i>Spotify Top Tracks</span>
                             <div>
@@ -370,7 +373,7 @@
                     <!-- AI Mood Recommendations and Listening Stats -->
                     <div class="row mt-4">
                         <div class="col-md-6">
-                            <div class="card">
+                            <div class="card" id="aiSection">
                                 <div class="card-header d-flex justify-content-between align-items-center">
                                     <span><i class="bi bi-stars me-2"></i>AI 감정 추천</span>
                                     <div>
@@ -390,7 +393,7 @@
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="card">
+                            <div class="card" id="listeningStatsSection">
                                 <div class="card-header d-flex justify-content-between align-items-center">
                                     <span>청취 통계</span>
                                     <button class="btn btn-sm btn-outline-secondary" id="listeningStatsRefresh">새로고침</button>
@@ -406,7 +409,7 @@
                     </div>
 
                     <!-- Spotify Top Artists -->
-                    <div class="card mt-4">
+                    <div class="card mt-4" id="topArtistsSection">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <span><i class="bi bi-person-bounding-box me-2"></i>Spotify Top Artists</span>
                             <div>
@@ -494,6 +497,10 @@
       return { error: String(e) };
     }
   }
+
+  // Shared state for AI features
+  let aiParams = null;
+  let aiRecoTracks = [];
 
   function renderRecentlyPlayed(data) {
     const list = document.getElementById('recentlyPlayedList');
@@ -718,6 +725,87 @@
     }
   }
 
+  // Quick Action: shuffle recommendations with slight parameter jitter
+  async function loadShuffledRecommendations() {
+    const list = document.getElementById('aiRecoList');
+    list.innerHTML = '';
+    const text = document.getElementById('aiMoodText')?.value.trim() || 'random upbeat';
+    const base = (typeof aiParams !== 'undefined' && aiParams) ? aiParams : {};
+    const jitter = (v) => Math.min(1, Math.max(0, ((v ?? 0.5) + (Math.random() * 0.6 - 0.3))));
+    const defaultGenres = ['pop', 'k-pop', 'indie', 'electronic', 'rock'];
+    const seedGenres = (Array.isArray(base.seed_genres) && base.seed_genres.length)
+      ? [...base.seed_genres].sort(() => Math.random() - 0.5).slice(0, 2)
+      : defaultGenres.sort(() => Math.random() - 0.5).slice(0, 2);
+
+    const params = {
+      seed_genres: seedGenres,
+      target_valence: jitter(base.target_valence),
+      target_energy: jitter(base.target_energy),
+      target_danceability: jitter(base.target_danceability),
+    };
+
+    const res = await postJSON('/api/recommendations/advanced', { mood: text, usePersonalized: true, params });
+    if (res.error) {
+      const el = document.createElement('div');
+      el.className = 'text-danger small';
+      el.textContent = '추천 오류: ' + res.error;
+      list.appendChild(el);
+      return;
+    }
+    const tracks = res.tracks || [];
+    aiRecoTracks = tracks;
+    const grid = document.createElement('div');
+    grid.className = 'row';
+    tracks.forEach(t => {
+      const col = document.createElement('div');
+      col.className = 'col-12 col-md-6 mb-3';
+      const img = t.albumImage ? `<img src="${t.albumImage}" alt="${t.name}" style="width:64px;height:64px;object-fit:cover;border-radius:6px;" class="me-3"/>` : '';
+      const link = t.spotifyUrl ? `<a href="${t.spotifyUrl}" target="_blank" rel="noopener">열기</a>` : '';
+      col.innerHTML = `
+        <div class="d-flex align-items-center">
+          ${img}
+          <div>
+            <div class="fw-semibold">${t.name}</div>
+            <div class="text-muted small">${t.artists || ''}</div>
+            <div class="small">${link}</div>
+          </div>
+        </div>`;
+      grid.appendChild(col);
+    });
+    list.appendChild(grid);
+  }
+
+  // Voice input for mood text using Web Speech API
+  function startVoiceInput() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const ta = document.getElementById('aiMoodText');
+    if (!SR) {
+      alert('브라우저가 음성 입력을 지원하지 않습니다.');
+      ta?.focus();
+      return;
+    }
+    try {
+      const recog = new SR();
+      recog.lang = 'ko-KR';
+      recog.interimResults = true;
+      recog.maxAlternatives = 1;
+      recog.onresult = (e) => {
+        const transcript = Array.from(e.results).map(r => r[0]?.transcript || '').join(' ').trim();
+        if (ta) ta.value = transcript;
+      };
+      recog.onerror = (e) => {
+        console.warn('Speech error:', e);
+        alert('음성 인식 오류: ' + (e.error || 'unknown'));
+      };
+      recog.onend = () => { ta?.focus(); };
+      recog.start();
+      document.getElementById('aiSection')?.scrollIntoView({ behavior: 'smooth' });
+    } catch (err) {
+      alert('음성 인식 초기화 실패: ' + err);
+      ta?.focus();
+    }
+  }
+
     const saveRecommendationsToPlaylist = async () => {
         const name = prompt("플레이리스트 이름을 입력하세요", "Mood Melody 추천") || "Mood Melody 추천";
         const description = prompt("설명을 입력하세요", "AI 감정 추천 기반 자동 생성") || "AI 감정 추천 기반 자동 생성";
@@ -817,6 +905,42 @@
   });
   document.getElementById('aiSaveBtn').addEventListener('click', function(e) {
     e.preventDefault(); saveRecommendationsToPlaylist();
+  });
+
+  // Quick Actions
+  document.getElementById('qaAddMoodBtn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    document.getElementById('aiSection')?.scrollIntoView({ behavior: 'smooth' });
+    const ta = document.getElementById('aiMoodText'); ta?.focus();
+  });
+  document.getElementById('qaShuffleBtn')?.addEventListener('click', (e) => { e.preventDefault(); loadShuffledRecommendations(); });
+  document.getElementById('qaVoiceBtn')?.addEventListener('click', (e) => { e.preventDefault(); startVoiceInput(); });
+
+  // Sidebar nav scroll mapping
+  const sidebarLinks = document.querySelectorAll('.sidebar .nav-link');
+  const setActiveSidebar = (id) => {
+    sidebarLinks.forEach(l => l.classList.toggle('active', l.id === id));
+  };
+
+  document.getElementById('dashboardNav')?.addEventListener('click', (e) => {
+    e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); setActiveSidebar('dashboardNav');
+  });
+  document.getElementById('moodTrackerNav')?.addEventListener('click', (e) => {
+    e.preventDefault(); document.getElementById('aiSection')?.scrollIntoView({ behavior: 'smooth' }); setActiveSidebar('moodTrackerNav');
+  });
+  document.getElementById('insightsNav')?.addEventListener('click', (e) => {
+    e.preventDefault(); document.getElementById('listeningStatsSection')?.scrollIntoView({ behavior: 'smooth' }); setActiveSidebar('insightsNav');
+  });
+  document.getElementById('favoritesNav')?.addEventListener('click', (e) => {
+    e.preventDefault(); document.getElementById('myPlaylistsSection')?.scrollIntoView({ behavior: 'smooth' }); setActiveSidebar('favoritesNav');
+  });
+  document.getElementById('settingsNav')?.addEventListener('click', (e) => {
+    e.preventDefault(); alert('설정 섹션은 아직 준비 중입니다.'); setActiveSidebar('settingsNav');
+  });
+
+  // View All → scroll to Recently Played
+  document.getElementById('recentViewAllBtn')?.addEventListener('click', (e) => {
+    e.preventDefault(); document.getElementById('recentlyPlayedSection')?.scrollIntoView({ behavior: 'smooth' });
   });
 
   // 신규: 버튼/이벤트 연결

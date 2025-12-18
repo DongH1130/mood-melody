@@ -7,11 +7,13 @@ import se.michaelthelin.spotify.model_objects.specification.Track
 import se.michaelthelin.spotify.requests.data.playlists.GetPlaylistsItemsRequest
 import org.springframework.stereotype.Service
 import jakarta.annotation.PostConstruct
+import org.slf4j.LoggerFactory
 
 @Service
 class SpotifyService(
     private val spotifyApi: SpotifyApi
 ) {
+    private val log = LoggerFactory.getLogger(SpotifyService::class.java)
     
     @PostConstruct
     fun init() {
@@ -22,6 +24,18 @@ class SpotifyService(
         } catch (e: Exception) {
             // 초기화 실패 시 애플리케이션 기동을 막지 않음
             println("[Spotify] 초기화 실패: ${e.message}. 유효한 클라이언트 자격 증명을 설정하세요.")
+        }
+    }
+
+    private fun ensureAccessToken() {
+        try {
+            val token = spotifyApi.accessToken
+            if (token == null || token.isBlank()) {
+                val creds = spotifyApi.clientCredentials().build().execute()
+                spotifyApi.accessToken = creds.accessToken
+            }
+        } catch (e: Exception) {
+            log.warn("Spotify 토큰 확보 실패: {}", e.message)
         }
     }
 
@@ -87,6 +101,11 @@ class SpotifyService(
         return RecommendationParams(genres, valence, energy, danceability)
     }
 
+    // 공개 메서드: 텍스트를 입력받아 룰 기반 파라미터를 계산
+    fun deriveParamsFromText(text: String): RecommendationParams {
+        return deriveParams(text)
+    }
+
     fun getRecommendations(seedTracks: List<String>, mood: String): List<String> {
         try {
             val builder = spotifyApi.getRecommendations()
@@ -108,6 +127,35 @@ class SpotifyService(
         }
     }
 
+    // Cache allowed genre seeds to avoid repeated calls
+    private var allowedGenreSeedsCache: Set<String>? = null
+
+    private fun getAllowedGenreSeeds(): Set<String> {
+        allowedGenreSeedsCache?.let { return it }
+        return try {
+            val seedsArr: Array<String> = spotifyApi.getAvailableGenreSeeds().build().execute()
+            val seeds = seedsArr.map { s -> s.lowercase() }.toSet()
+            allowedGenreSeedsCache = seeds
+            seeds
+        } catch (_: Exception) {
+            // Fallback to a safe subset that is typically available
+            val seeds = setOf("pop", "rock", "indie", "classical", "jazz", "metal", "edm", "dance")
+            allowedGenreSeedsCache = seeds
+            seeds
+        }
+    }
+
+    private fun sanitizeGenres(genres: List<String>): List<String> {
+        if (genres.isEmpty()) return emptyList()
+        val allowed = getAllowedGenreSeeds()
+        return genres.map { it.lowercase() }.filter { allowed.contains(it) }
+    }
+
+    private fun clamp01(value: Float?): Float? {
+        if (value == null) return null
+        return kotlin.math.max(0f, kotlin.math.min(1f, value))
+    }
+
     fun getRecommendationsAdvanced(
         seedTracks: List<String> = emptyList(),
         genres: List<String> = emptyList(),
@@ -116,13 +164,37 @@ class SpotifyService(
         targetDanceability: Float? = null
     ): List<Map<String, Any>> {
         try {
+            ensureAccessToken()
             val builder = spotifyApi.getRecommendations()
-            if (seedTracks.isNotEmpty()) builder.seed_tracks(seedTracks.take(5).joinToString(","))
-            if (genres.isNotEmpty()) builder.seed_genres(genres.take(5).joinToString(","))
-            targetValence?.let { builder.target_valence(it) }
-            targetEnergy?.let { builder.target_energy(it) }
-            targetDanceability?.let { builder.target_danceability(it) }
-            val rec = builder.limit(12).build().execute()
+            // Sanitize genres to Spotify's allowed seed list
+            var safeGenres = sanitizeGenres(genres)
+            if (safeGenres.isEmpty() && seedTracks.isEmpty()) {
+                // Ensure at least one valid seed genre exists to avoid Spotify 400
+                val allowed = getAllowedGenreSeeds()
+                val defaults = listOf("pop", "rock", "indie").filter { allowed.contains(it) }
+                safeGenres = defaults
+            }
+
+            // Enforce combined seed cap: total of tracks+genres must be <= 5
+            val trackSeeds = seedTracks.take(5)
+            val genreCapacity = kotlin.math.max(0, 5 - trackSeeds.size)
+            val genreSeeds = safeGenres.take(genreCapacity)
+
+            if (trackSeeds.isNotEmpty()) builder.seed_tracks(trackSeeds.joinToString(","))
+            if (genreSeeds.isNotEmpty()) builder.seed_genres(genreSeeds.joinToString(","))
+
+            // Clamp target values to [0,1] to satisfy Spotify API constraints
+            clamp01(targetValence)?.let { builder.target_valence(it) }
+            clamp01(targetEnergy)?.let { builder.target_energy(it) }
+            clamp01(targetDanceability)?.let { builder.target_danceability(it) }
+
+            val rec = try {
+                builder.limit(12).build().execute()
+            } catch (ex: Exception) {
+                log.warn("Spotify 추천 호출 실패: {}", ex.message)
+                ensureAccessToken()
+                builder.limit(12).build().execute()
+            }
             val ids = rec.tracks.mapNotNull { it.id }
             val imageMap = getAlbumImagesForTrackIds(ids)
             return rec.tracks.map { t ->
@@ -136,7 +208,31 @@ class SpotifyService(
                 )
             }
         } catch (e: Exception) {
-            throw RuntimeException("Error getting recommendations advanced", e)
+            log.warn("고급 추천 실패, 검색 기반 폴백 적용: {}", e.message)
+            val allowed = getAllowedGenreSeeds()
+            val baseGenres = sanitizeGenres(genres).ifEmpty { listOf("pop", "rock", "indie").filter { allowed.contains(it) } }
+            return fallbackRecommendationsBySearch(baseGenres, limit = 12)
+        }
+    }
+
+    private fun fallbackRecommendationsBySearch(genres: List<String>, limit: Int = 12): List<Map<String, Any>> {
+        return try {
+            ensureAccessToken()
+            val query = if (genres.isNotEmpty()) genres.joinToString(" ") else "pop indie rock"
+            val res = spotifyApi.searchTracks(query).limit(limit).build().execute()
+            res.items.map { t ->
+                mapOf(
+                    "id" to t.id,
+                    "uri" to t.uri,
+                    "name" to t.name,
+                    "artists" to t.artists.joinToString(", ") { it.name },
+                    "albumImage" to (t.album?.images?.firstOrNull()?.url ?: ""),
+                    "spotifyUrl" to (t.externalUrls?.externalUrls?.get("spotify") ?: "")
+                )
+            }.filter { (it["id"] as? String).orEmpty().isNotBlank() }
+        } catch (e: Exception) {
+            log.warn("검색 폴백 실패: {}", e.message)
+            emptyList()
         }
     }
 

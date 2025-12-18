@@ -140,4 +140,38 @@ class SpotifyUserService(
             }
         }
     }
+
+    fun getUserPlaylists(authentication: Authentication, limit: Int = 20, offset: Int = 0): Map<String, Any> {
+        val token = getAccessToken(authentication) ?: throw IllegalStateException("Spotify access token not found")
+        val httpClient = HttpClients.createDefault()
+        val request = HttpGet("https://api.spotify.com/v1/me/playlists?limit=$limit&offset=$offset")
+        request.addHeader("Authorization", "Bearer $token")
+
+        httpClient.execute(request).use { response ->
+            val status = response.code
+            val body = (response as ClassicHttpResponse).entity.content.bufferedReader().readText()
+            if (status in 200..299) {
+                return jacksonObjectMapper().readValue<Map<String, Any>>(body)
+            } else {
+                throw RuntimeException("Spotify my playlists failed: HTTP $status - $body")
+            }
+        }
+    }
+
+    fun getPlaylistItems(authentication: Authentication, playlistId: String, limit: Int = 100): Map<String, Any> {
+        val token = getAccessToken(authentication) ?: throw IllegalStateException("Spotify access token not found")
+        val httpClient = HttpClients.createDefault()
+        val request = HttpGet("https://api.spotify.com/v1/playlists/$playlistId/tracks?limit=$limit")
+        request.addHeader("Authorization", "Bearer $token")
+
+        httpClient.execute(request).use { response ->
+            val status = response.code
+            val body = (response as ClassicHttpResponse).entity.content.bufferedReader().readText()
+            if (status in 200..299) {
+                return jacksonObjectMapper().readValue<Map<String, Any>>(body)
+            } else {
+                throw RuntimeException("Spotify playlist items failed: HTTP $status - $body")
+            }
+        }
+    }
 }

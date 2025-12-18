@@ -8,13 +8,22 @@ import org.apache.hc.client5.http.classic.methods.HttpPost
 import org.apache.hc.client5.http.impl.classic.HttpClients
 import org.apache.hc.core5.http.io.entity.StringEntity
 import org.apache.hc.core5.http.ContentType
+import org.slf4j.LoggerFactory
 
 @Service
 class GeminiService(
-    @Value("\${gemini.api.key}") private val apiKey: String,
-    @Value("\${gemini.api.model:gemini-1.5-flash}") private val model: String
+    @Value("\${gemini.api.key:\${gemini.key:}}") private val apiKey: String,
+    @Value("\${gemini.api.model:\${gemini.model:gemini-2.0-flash}}") private val model: String,
+    @Value("\${ai.provider:gemini}") private val provider: String,
+    @Value("\${cloudflare.api.token:}") private val cfApiToken: String,
+    @Value("\${cloudflare.account.id:}") private val cfAccountId: String,
+    @Value("\${cloudflare.model:@cf/meta/llama-3.1-8b-instruct}") private val cfModel: String,
+    @Value("\${openrouter.api.key:\${openrouter.key:}}") private val orApiKey: String,
+    @Value("\${openrouter.model:openai/gpt-4o-mini}") private val orModel: String,
+    @Value("\${openrouter.base:https://openrouter.ai/api}") private val orBase: String
 ) {
     private val mapper = jacksonObjectMapper()
+    private val log = LoggerFactory.getLogger(GeminiService::class.java)
 
     fun analyzeMood(text: String): String {
         val prompt = """
@@ -48,7 +57,8 @@ class GeminiService(
         val response = generateContent(prompt) ?: return null
         return try {
             mapper.readValue<MoodParams>(response)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            log.warn("Gemini JSON 파싱 실패: {}", e.message)
             null
         }
     }
@@ -65,28 +75,104 @@ class GeminiService(
     }
 
     private fun generateContent(userText: String): String? {
-        val url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey"
-        val httpClient = HttpClients.createDefault()
-        val httpPost = HttpPost(url)
+        // 공급자 스위치: OpenRouter 우선
+        if (provider.equals("openrouter", ignoreCase = true)) {
+            return generateContentViaOpenRouter(userText)
+        }
+        try {
+            if (apiKey.isBlank()) {
+                log.warn("Gemini API 키가 설정되지 않았습니다. 응답을 건너뜁니다.")
+                return null
+            }
+            val url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey"
+            val httpClient = HttpClients.createDefault()
+            val httpPost = HttpPost(url)
+            httpPost.addHeader("Content-Type", "application/json")
+            httpPost.addHeader("Accept", "application/json")
 
-        val body = mapOf(
-            "contents" to listOf(
-                mapOf(
-                    "role" to "user",
-                    "parts" to listOf(mapOf("text" to userText))
+            val body = mapOf(
+                "contents" to listOf(
+                    mapOf(
+                        "role" to "user",
+                        "parts" to listOf(mapOf("text" to userText))
+                    )
                 )
             )
-        )
 
-        val json = mapper.writeValueAsString(body)
-        httpPost.entity = StringEntity(json, ContentType.APPLICATION_JSON)
+            val json = mapper.writeValueAsString(body)
+            httpPost.entity = StringEntity(json, ContentType.APPLICATION_JSON)
 
-        httpClient.execute(httpPost).use { response ->
-            val entity = response.entity ?: return null
-            val responseJson = entity.content.bufferedReader().use { it.readText() }
-            val parsed: GenerateContentResponse = mapper.readValue(responseJson)
-            return parsed.candidates.firstOrNull()
-                ?.content?.parts?.firstOrNull()?.text
+            httpClient.execute(httpPost).use { response ->
+                val status = response.code
+                val responseJson = response.entity?.content?.bufferedReader()?.use { it.readText() } ?: run {
+                    log.warn("Gemini 응답 본문이 비어 있습니다. status={}", status)
+                    return null
+                }
+                if (status !in 200..299) {
+                    log.warn("Gemini HTTP 오류 status={} body={}", status, responseJson.take(300))
+                    return null
+                }
+                return try {
+                    val parsed: GenerateContentResponse = mapper.readValue(responseJson)
+                    parsed.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text
+                } catch (e: Exception) {
+                    log.warn("Gemini 응답 파싱 오류: {}", e.message)
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            log.warn("Gemini 호출 실패: {}", e.message)
+            return null
+        }
+    }
+
+    // OpenRouter Chat Completions 호출
+    private fun generateContentViaOpenRouter(userText: String): String? {
+        try {
+            if (orApiKey.isBlank()) {
+                log.warn("OpenRouter API 키가 설정되지 않았습니다. 응답을 건너뜁니다.")
+                return null
+            }
+            val url = "$orBase/v1/chat/completions"
+            val httpClient = HttpClients.createDefault()
+            val httpPost = HttpPost(url)
+            httpPost.addHeader("Content-Type", "application/json")
+            httpPost.addHeader("Accept", "application/json")
+            httpPost.addHeader("Authorization", "Bearer $orApiKey")
+            // 선택 헤더: 서비스 소개용 (없어도 동작)
+            httpPost.addHeader("X-Title", "Mood Melody")
+
+            val body = mapOf(
+                "model" to orModel,
+                "messages" to listOf(
+                    mapOf("role" to "system", "content" to "너는 음악 추천과 감정 분석을 돕는 어시스턴트야."),
+                    mapOf("role" to "user", "content" to userText)
+                )
+            )
+            val json = mapper.writeValueAsString(body)
+            httpPost.entity = StringEntity(json, ContentType.APPLICATION_JSON)
+
+            httpClient.execute(httpPost).use { response ->
+                val status = response.code
+                val responseJson = response.entity?.content?.bufferedReader()?.use { it.readText() } ?: run {
+                    log.warn("OpenRouter 응답 본문이 비어 있습니다. status={}", status)
+                    return null
+                }
+                if (status !in 200..299) {
+                    log.warn("OpenRouter HTTP 오류 status={} body={}", status, responseJson.take(300))
+                    return null
+                }
+                return try {
+                    val parsed: OpenRouterChatCompletionResponse = mapper.readValue(responseJson)
+                    parsed.choices.firstOrNull()?.message?.content
+                } catch (e: Exception) {
+                    log.warn("OpenRouter 응답 파싱 오류: {}", e.message)
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            log.warn("OpenRouter 호출 실패: {}", e.message)
+            return null
         }
     }
 }
@@ -96,3 +182,7 @@ data class Part(val text: String?)
 data class Content(val role: String?, val parts: List<Part> = emptyList())
 data class Candidate(val content: Content)
 data class GenerateContentResponse(val candidates: List<Candidate> = emptyList())
+// --- OpenRouter 응답 파싱용 데이터 클래스 ---
+data class OrMessage(val role: String?, val content: String?)
+data class OrChoice(val index: Int? = null, val message: OrMessage? = null)
+data class OpenRouterChatCompletionResponse(val choices: List<OrChoice> = emptyList())

@@ -174,7 +174,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link" href="#" id="myPlaylistsNav">
                                 <i class="bi bi-music-note-list"></i> My Playlists
                             </a>
                         </li>
@@ -228,8 +228,8 @@
                     <!-- Recent Activity -->
                     <div class="col-lg-8">
                         <div class="card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <span><i class="bi bi-activity me-2"></i>Recent Activity</span>
+                             <div class="card-header d-flex justify-content-between align-items-center">
+                                 <span><i class="bi bi-activity me-2"></i>Recent Activity</span>
                                 <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
                             </div>
                             <div class="card-body">
@@ -325,53 +325,13 @@
                 <!-- Recent Playlists -->
                 <div class="row mt-4">
                     <div class="col-12">
-                        <div class="card">
+                        <div class="card" id="myPlaylistsSection">
                             <div class="card-header d-flex justify-content-between align-items-center">
-                                <span><i class="bi bi-collection-play me-2"></i>Recent Playlists</span>
-                                <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+                                <span><i class="bi bi-collection-play me-2"></i>My Playlists</span>
+                                <a href="#" class="btn btn-sm btn-outline-primary" id="myPlaylistsReload">Reload</a>
                             </div>
                             <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-4 mb-4">
-                                        <div class="card h-100 border-0 shadow-sm">
-                                            <img src="https://source.unsplash.com/random/300x200/?music,playlist,1" class="card-img-top" alt="Playlist">
-                                            <div class="card-body">
-                                                <h5 class="card-title mb-1">Chill Vibes</h5>
-                                                <p class="text-muted small mb-2">24 songs • 1h 42m</p>
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <span class="badge bg-primary bg-opacity-10 text-primary">Chill</span>
-                                                    <button class="btn btn-sm btn-outline-primary">Play</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4 mb-4">
-                                        <div class="card h-100 border-0 shadow-sm">
-                                            <img src="https://source.unsplash.com/random/300x200/?music,playlist,2" class="card-img-top" alt="Playlist">
-                                            <div class="card-body">
-                                                <h5 class="card-title mb-1">Workout Mix</h5>
-                                                <p class="text-muted small mb-2">18 songs • 1h 15m</p>
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <span class="badge bg-danger bg-opacity-10 text-danger">Energetic</span>
-                                                    <button class="btn btn-sm btn-outline-primary">Play</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4 mb-4">
-                                        <div class="card h-100 border-0 shadow-sm">
-                                            <img src="https://source.unsplash.com/random/300x200/?music,playlist,3" class="card-img-top" alt="Playlist">
-                                            <div class="card-body">
-                                                <h5 class="card-title mb-1">Focus Flow</h5>
-                                                <p class="text-muted small mb-2">32 songs • 2h 18m</p>
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <span class="badge bg-success bg-opacity-10 text-success">Focus</span>
-                                                    <button class="btn btn-sm btn-outline-primary">Play</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <div id="myPlaylistsList" class="row"></div>
                             </div>
                         </div>
                     </div>
@@ -507,8 +467,6 @@
             });
         });
     </script>
-</body>
-</html>
 
 <script>
 (function() {
@@ -621,6 +579,69 @@
     });
   }
 
+  // 신규: 데이터 로더들
+  async function loadRecentlyPlayed() {
+    const data = await fetchJSON('/api/spotify/recent?limit=20');
+    renderRecentlyPlayed(data);
+  }
+
+  async function loadTopTracks() {
+    const range = document.getElementById('topTracksRange')?.value || 'medium_term';
+    const data = await fetchJSON(`/api/spotify/top/tracks?timeRange=${encodeURIComponent(range)}&limit=20`);
+    renderTopTracks(data);
+  }
+
+  async function loadTopArtists() {
+    const range = document.getElementById('topArtistsRange')?.value || 'medium_term';
+    const data = await fetchJSON(`/api/spotify/top/artists?timeRange=${encodeURIComponent(range)}&limit=20`);
+    renderTopArtists(data);
+  }
+
+  function renderMyPlaylists(data) {
+    const wrap = document.getElementById('myPlaylistsList');
+    wrap.innerHTML = '';
+    if (data.error || !data.items) {
+      wrap.innerHTML = '<div class="text-muted small">Spotify에 로그인하면 내 플레이리스트가 표시됩니다.</div>';
+      return;
+    }
+    data.items.slice(0, 12).forEach(pl => {
+      const img = (pl.images || [])[0]?.url;
+      const name = pl.name || 'Untitled';
+      const id = pl.id;
+      const el = document.createElement('div');
+      el.className = 'col-12 col-md-6 mb-3';
+      el.innerHTML = `
+        <div class="d-flex align-items-center">
+          ${img ? `<img src="${img}" class="me-3" style="width:64px;height:64px;object-fit:cover;border-radius:6px;"/>` : ''}
+          <div>
+            <div class="fw-semibold">${name}</div>
+            <div class="text-muted small">${pl.tracks?.total ?? 0}곡</div>
+            <a href="#" class="small" data-plid="${id}">트랙 보기</a>
+          </div>
+        </div>`;
+      wrap.appendChild(el);
+      const link = el.querySelector('a[data-plid]');
+      if (link && id) {
+        link.addEventListener('click', async (e) => {
+          e.preventDefault();
+          const tracks = await fetchJSON(`/api/spotify/playlist/${encodeURIComponent(id)}/tracks?limit=100`);
+          const names = (tracks.items || []).map(it => {
+            const t = it.track || {};
+            const nm = t.name || 'Unknown';
+            const arts = (t.artists || []).map(a => a.name).join(', ');
+            return `${nm} - ${arts}`;
+          }).slice(0, 20).join('\n');
+          alert(names || '트랙 정보가 없습니다.');
+        });
+      }
+    });
+  }
+
+  async function loadMyPlaylists() {
+    const data = await fetchJSON('/api/spotify/playlists?limit=20');
+    renderMyPlaylists(data);
+  }
+
   // AI Mood analysis & recommendations
   async function analyzeMoodText() {
     const text = document.getElementById('aiMoodText').value.trim();
@@ -720,6 +741,7 @@
         }
         const data = await resp.json();
         alert("플레이리스트가 생성되었습니다: " + (data.id || "success"));
+        try { loadMyPlaylists(); } catch (e) {}
     };
 
     let lastListeningStats = null;
@@ -787,7 +809,6 @@
     document.getElementById("listeningStatsRefresh")?.addEventListener("click", (e) => { e.preventDefault(); loadListeningStats(); });
     // 자동 로드 시도
     loadListeningStats();
-  // ... existing code ...
   document.getElementById('aiAnalyzeBtn').addEventListener('click', function(e) {
     e.preventDefault(); analyzeMoodText();
   });
@@ -798,7 +819,23 @@
     e.preventDefault(); saveRecommendationsToPlaylist();
   });
 
-  // ... existing code ...
+  // 신규: 버튼/이벤트 연결
+  document.getElementById('recentlyPlayedRefresh')?.addEventListener('click', (e) => { e.preventDefault(); loadRecentlyPlayed(); });
+  document.getElementById('topTracksRefresh')?.addEventListener('click', (e) => { e.preventDefault(); loadTopTracks(); });
+  document.getElementById('topArtistsRefresh')?.addEventListener('click', (e) => { e.preventDefault(); loadTopArtists(); });
+  document.getElementById('topTracksRange')?.addEventListener('change', () => loadTopTracks());
+  document.getElementById('topArtistsRange')?.addEventListener('change', () => loadTopArtists());
+  document.getElementById('myPlaylistsReload')?.addEventListener('click', (e) => { e.preventDefault(); loadMyPlaylists(); });
+  document.getElementById('myPlaylistsNav')?.addEventListener('click', (e) => { e.preventDefault(); loadMyPlaylists(); document.getElementById('myPlaylistsSection')?.scrollIntoView({ behavior: 'smooth' }); });
+
+  document.getElementById('listeningStatsRefresh')?.addEventListener('click', (e) => { e.preventDefault(); loadListeningStats(); });
+
+  // 초기 로드
+  loadListeningStats();
+  loadRecentlyPlayed();
+  loadTopTracks();
+  loadTopArtists();
+  loadMyPlaylists();
 })();
 </script>
 </body>

@@ -56,7 +56,7 @@ spotify:
 gemini:
   api:
     key: ${GEMINI_API_KEY}
-    model: ${GEMINI_MODEL:gemini-1.5-flash}
+    model: ${GEMINI_MODEL:gemini-2.0-flash}
 
 server:
   port: ${PORT:8086}

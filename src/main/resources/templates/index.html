@@ -14,6 +14,9 @@
             --accent-color: #ff6b6b;
             --light-bg: #f8f9fa;
             --dark-bg: #343a40;
+            html[data-bs-theme='dark'] body { background: linear-gradient(135deg, #0b1220 0%, #111827 100%); color: #e2e8f0; }
+            html[data-bs-theme='dark'] .auth-card { background: rgba(17, 24, 39, 0.85); color: #e2e8f0; }
+            html[data-bs-theme='dark'] .auth-header { background: linear-gradient(45deg, #1f2937, #374151); }
         }
         
         body {
@@ -156,6 +159,7 @@
     </style>
 </head>
 <body>
+    <button id="themeToggle" class="btn btn-outline-light btn-sm position-fixed" style="top:1rem;right:1rem;z-index:1040" title="Toggle theme"><i class="bi bi-moon"></i></button>
     <div class="container py-5">
         <div class="row justify-content-center">
             <div class="col-lg-10">
@@ -227,17 +231,11 @@
                                     <a href="/oauth2/authorization/spotify" class="btn btn-spotify">
                                         <i class="bi bi-music-note-beamed"></i> Continue with Spotify
                                     </a>
-                                     
-                                     <div class="divider">
-                                         <span class="divider-text">or</span>
-                                     </div>
-
+                                    
+                                    <!-- 구분선 제거 -->
+                                    
                                     <div th:if="${param.error}" class="alert alert-danger mt-3" role="alert">
                                         로그인에 실패했습니다. 다시 시도하거나 다른 계정으로 로그인하세요.
-                                    </div>
-                                    
-                                    <div class="divider">
-                                        <span class="divider-text">or</span>
                                     </div>
                                     
                                     <p class="text-muted small mt-4">
@@ -274,6 +272,26 @@
                 }, 100 * index);
             });
         });
+    </script>
+    <script>
+    (function(){
+      const setTheme = (t) => document.documentElement.setAttribute('data-bs-theme', t);
+      const saved = localStorage.getItem('theme') || 'light';
+      setTheme(saved);
+      const btn = document.getElementById('themeToggle');
+      const updateIcon = () => {
+        if (!btn) return;
+        const dark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+        btn.innerHTML = `<i class="bi ${dark ? 'bi-brightness-high' : 'bi-moon'}"></i>`;
+      };
+      updateIcon();
+      btn && btn.addEventListener('click', () => {
+        const next = (document.documentElement.getAttribute('data-bs-theme') === 'dark') ? 'light' : 'dark';
+        setTheme(next);
+        localStorage.setItem('theme', next);
+        updateIcon();
+      });
+    })();
     </script>
 </body>
 </html>
